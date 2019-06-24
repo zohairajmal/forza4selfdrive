@@ -2,29 +2,35 @@ import numpy as np
 from PIL import ImageGrab
 import cv2
 import time
+from directkeys import ReleaseKey, PressKey, W, A, S, D
 import pyautogui
-from directkeys import PressKey, W, A, S, D
 
 
-def process_img(image):
-    original_image = image
-    # convert to gray
-    processed_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) 
-    # edge detection
+def roi(img, vertices):
+    mask = np.zeros_like(img)
+    cv2.fillPoly(mask, vertices, 255)
+    masked = cv2.bitwise_and(img, mask)
+    return masked
+
+def process_img(original_image):
+    processed_img = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
     processed_img = cv2.Canny(processed_img, threshold1=200, threshold2=300)
+    vertices = np.array([[10,500],[10,275], [300,210], [500,210], [800,275], [800,500]], np.int32)
+    processed_img = roi(processed_img, [vertices])
     return processed_img
 
 
-last_time = time.time()
-while True:
-    PressKey(W)
-    # Remove title navbar, 800 x 640 resolution of screen
-    screen = np.array(ImageGrab.grab(bbox=(0, 40, 800, 640)))
-    # print('Frame took {} seconds'.format(time.time()-last_time)) #Checking the time to see if the method is efficient enough or not
+def main():
     last_time = time.time()
-    new_screen = process_img(screen)
-    cv2.imshow('window', new_screen)
-    # cv2.imshow('window',cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)) # converting to rgb because for some reason it was in bluie greedn red, weird.
-    if cv2.waitKey(25) & 0xFF == ord('q'):
-        cv2.destroyAllWindows()
-        break
+    while(True):
+        screen =  np.array(ImageGrab.grab(bbox=(0,40, 800, 640)))
+        new_screen = process_img(screen)
+        print('Loop took {} seconds'.format(time.time()-last_time))
+        last_time = time.time()
+        cv2.imshow('window', new_screen)
+        #cv2.imshow('window2', cv2.cvtColor(screen, cv2.COLOR_BGR2RGB))
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+            cv2.destroyAllWindows()
+            break
+
+main()
